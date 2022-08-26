@@ -9,3 +9,9 @@ EIP工具库，提供从站工具连接和测试
 - EIPScanner第三方库
 - googletest测试库
 
+## 编译
+
+```
+> cmake -B build
+> cmake --build build -j
+```
