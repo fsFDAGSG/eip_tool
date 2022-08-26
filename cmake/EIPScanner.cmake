@@ -4,7 +4,8 @@
 include(FetchContent)
 FetchContent_Declare(
     EIPScanner
-    GIT_REPOSITORY https://github.com/xiaohaidao/EIPScanner.git
+    # GIT_REPOSITORY https://github.com/xiaohaidao/EIPScanner.git
+    GIT_REPOSITORY http://192.168.0.11:20080/libobo/EIPScanner.git
     GIT_TAG dev
 )
 FetchContent_MakeAvailable(EIPScanner)

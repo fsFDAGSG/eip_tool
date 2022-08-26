@@ -27,7 +27,7 @@ int ImplicitMessage() {
   ConnectionManager connectionManager;
 
   ConnectionParameters parameters;
-  parameters.connectionPath = {0x20, 0x04,0x24, 151, 0x2C, 150, 0x2C, 100};  // config Assm151, output Assm150, intput Assm100
+  parameters.connectionPath = {0x20, 0x04, 0x24, 151, 0x2C, 150, 0x2C, 100};  // config Assm151, output Assm150, intput Assm100
   parameters.o2tRealTimeFormat = true;
   parameters.originatorVendorId = 342;
   parameters.originatorSerialNumber = 32423;
@@ -42,10 +42,11 @@ int ImplicitMessage() {
   parameters.o2tRPI = 1000000;
   parameters.t2oRPI = 1000000;
   parameters.transportTypeTrigger |= NetworkConnectionParams::CLASS1;
+  parameters.connectionTimeoutMultiplier = 3;
 
   auto io = connectionManager.forwardOpen(si, parameters);
   if (auto ptr = io.lock()) {
-    ptr->setDataToSend(std::vector<uint8_t>(32));
+    //ptr->setDataToSend(std::vector<uint8_t>(32, 1));
 
     ptr->setReceiveDataListener([](auto realTimeHeader, auto sequence, auto data) {
       std::ostringstream ss;
@@ -60,12 +61,42 @@ int ImplicitMessage() {
     ptr->setCloseListener([]() {
       Logger(LogLevel::INFO) << "Closed";
     });
+    std::vector<uint8_t> send_data(32);
+    for(;/*connectionManager.hasOpenConnections()*/;) {
+        char buff[64];
+        printf("Enter implicit cmd:");
+        scanf("%63s", buff);
+        if (!strcmp(buff, "q")) {
+            break;
+        } else if (!strcmp(buff, "get") || !strcmp(buff, "g")) {
+        } else if (!strcmp(buff, "set") || !strcmp(buff, "s")) {
+            printf("Enter addr:");
+            scanf("%63s", buff);
+            int addr = atoi(buff);
+            if (addr >= 0 && addr < 64) {
+                printf("Enter data:");
+                scanf("%63s", buff);
+                send_data[addr] = buff[0];
+                ptr->setDataToSend(send_data);
+                printf("Data size is %u, Data is:", send_data.size());
+                for (auto &i: send_data) {
+                    printf(" 0x%x", i);
+                }
+                printf("\n");
+            }
+        } else {
+            printf("\n");
+        }
+        connectionManager.handleConnections(std::chrono::milliseconds(100));
+    }
   }
 
-  int count = 200;
-  while (connectionManager.hasOpenConnections() && count-- > 0) {
-    connectionManager.handleConnections(std::chrono::milliseconds(100));
-  }
+  /*
+   *int count = 200;
+   *while (connectionManager.hasOpenConnections() && count-- > 0) {
+   *    connectionManager.handleConnections(std::chrono::milliseconds(100));
+   *}
+   */
 
   connectionManager.forwardClose(si, io);
 
