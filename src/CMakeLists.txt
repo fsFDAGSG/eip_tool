@@ -4,6 +4,8 @@
 set(library_name "EipTool")
 add_executable(${library_name}
     main.cpp
+    ExplicitMessage.cpp
+    ImplicitMessage.cpp
 )
 
 target_link_libraries(${library_name} PUBLIC
@@ -12,7 +14,6 @@ target_link_libraries(${library_name} PUBLIC
 
 target_include_directories(${library_name} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC ${CMAKE_SOURCE_DIR}/include/
 )
 
 #set_target_properties((${library_name}
