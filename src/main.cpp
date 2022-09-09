@@ -25,8 +25,8 @@ int main(int args, char **argv) {
     try {
         if (args > 2) {
             ImplicitMessage(argv[1],
-                {(uint8_t)atoi(argv[3]), (uint8_t)atoi(argv[4]),
-                 (uint8_t)atoi(argv[5]), atoi(argv[6]), atoi(argv[7])});
+                {(uint8_t)atoi(argv[2]), (uint8_t)atoi(argv[3]),
+                 (uint8_t)atoi(argv[4]), atoi(argv[5]), atoi(argv[6])});
         } else {
             ExplicitMessage(argv[1]);
         }
