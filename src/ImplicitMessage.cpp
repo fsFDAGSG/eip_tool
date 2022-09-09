@@ -18,25 +18,42 @@ using eipScanner::utils::Buffer;
 using eipScanner::utils::Logger;
 using eipScanner::utils::LogLevel;
 
-int ImplicitMessage() {
-  Logger::setLogLevel(LogLevel::DEBUG);
+struct ImplicitParam {
+    uint8_t config_id;
+    uint8_t output_id;
+    uint8_t input_id;
+    int output_size;
+    int input_size;
+};
 
-  auto si = std::make_shared<SessionInfo>("127.0.0.1", 0xAF12);
+int ImplicitMessage(const std::string &host, const ImplicitParam &param) {
+  Logger::setLogLevel(LogLevel::DEBUG);
+#if WIN32
+  WSADATA wsaData;
+  int winsockStart = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (winsockStart != 0) {
+    Logger(LogLevel::ERROR) << "Failed to start WinSock - error code: " << winsockStart;
+    return EXIT_FAILURE;
+  }
+#endif
+
+  auto si = std::make_shared<SessionInfo>(host, 0xAF12);
 
   // Implicit messaging
   ConnectionManager connectionManager;
 
   ConnectionParameters parameters;
-  parameters.connectionPath = {0x20, 0x04, 0x24, 151, 0x2C, 150, 0x2C, 100};  // config Assm151, output Assm150, intput Assm100
+  parameters.connectionPath =
+      {0x20, 0x04, 0x24, param.config_id, 0x2C, param.output_id, 0x2C, param.input_id}; // config Assm151, output Assm150, intput Assm100
   parameters.o2tRealTimeFormat = true;
   parameters.originatorVendorId = 342;
   parameters.originatorSerialNumber = 32423;
   parameters.t2oNetworkConnectionParams |= NetworkConnectionParams::P2P;
+  parameters.t2oNetworkConnectionParams |= param.input_size; //size of Assm100 =32
   parameters.t2oNetworkConnectionParams |= NetworkConnectionParams::SCHEDULED_PRIORITY;
-  parameters.t2oNetworkConnectionParams |= 32; //size of Assm100 =32
   parameters.o2tNetworkConnectionParams |= NetworkConnectionParams::P2P;
   parameters.o2tNetworkConnectionParams |= NetworkConnectionParams::SCHEDULED_PRIORITY;
-  parameters.o2tNetworkConnectionParams |= 32; //size of Assm150 = 32
+  parameters.o2tNetworkConnectionParams |= param.output_size; //size of Assm150 = 32
 
   parameters.originatorSerialNumber = 0x12345;
   parameters.o2tRPI = 1000000;
@@ -46,7 +63,7 @@ int ImplicitMessage() {
 
   auto io = connectionManager.forwardOpen(si, parameters);
   if (auto ptr = io.lock()) {
-    //ptr->setDataToSend(std::vector<uint8_t>(32, 1));
+    ptr->setDataToSend(std::vector<uint8_t>(param.output_size, 1));
 
     ptr->setReceiveDataListener([](auto realTimeHeader, auto sequence, auto data) {
       std::ostringstream ss;
@@ -61,8 +78,8 @@ int ImplicitMessage() {
     ptr->setCloseListener([]() {
       Logger(LogLevel::INFO) << "Closed";
     });
-    std::vector<uint8_t> send_data(32);
-    for(;/*connectionManager.hasOpenConnections()*/;) {
+    std::vector<uint8_t> send_data(param.output_size);
+    for(; connectionManager.hasOpenConnections();) {
         char buff[64];
         printf("Enter implicit cmd:");
         scanf("%63s", buff);
@@ -73,7 +90,7 @@ int ImplicitMessage() {
             printf("Enter addr:");
             scanf("%63s", buff);
             int addr = atoi(buff);
-            if (addr >= 0 && addr < 64) {
+            if (addr >= 0 && addr < send_data.size()) {
                 printf("Enter data:");
                 scanf("%63s", buff);
                 send_data[addr] = buff[0];
@@ -91,14 +108,11 @@ int ImplicitMessage() {
     }
   }
 
-  /*
-   *int count = 200;
-   *while (connectionManager.hasOpenConnections() && count-- > 0) {
-   *    connectionManager.handleConnections(std::chrono::milliseconds(100));
-   *}
-   */
-
   connectionManager.forwardClose(si, io);
+
+#if WIN32
+  WSACleanup();
+#endif
 
   return EXIT_SUCCESS;
 }

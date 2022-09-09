@@ -25,10 +25,18 @@ using eipScanner::utils::Buffer;
 using eipScanner::utils::Logger;
 using eipScanner::utils::LogLevel;
 
-int ExplicitMessage() {
+int ExplicitMessage(const std::string &host) {
     Logger::setLogLevel(LogLevel::DEBUG);
+#if WIN32
+  WSADATA wsaData;
+  int winsockStart = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (winsockStart != 0) {
+    Logger(LogLevel::ERROR) << "Failed to start WinSock - error code: " << winsockStart;
+    return EXIT_FAILURE;
+  }
+#endif
 
-    auto si = std::make_shared<SessionInfo>("127.0.0.1", 0xAF12, std::chrono::seconds(10));
+    auto si = std::make_shared<SessionInfo>(host, 0xAF12, std::chrono::seconds(10));
     auto messageRouter = std::make_shared<MessageRouter>();
 
     // Read attribute
@@ -122,6 +130,10 @@ int ExplicitMessage() {
             printf("\n");
         }
     }
+
+#if WIN32
+  WSACleanup();
+#endif
 
     return EXIT_SUCCESS;
 }

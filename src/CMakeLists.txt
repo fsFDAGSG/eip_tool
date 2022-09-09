@@ -12,6 +12,12 @@ target_link_libraries(${library_name} PUBLIC
     EIPScannerS
 )
 
+if(WIN32)
+target_link_libraries(${library_name} PUBLIC
+    ws2_32
+)
+endif()
+
 target_include_directories(${library_name} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
